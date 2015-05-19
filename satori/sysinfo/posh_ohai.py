@@ -71,15 +71,14 @@ def system_info(client, with_install=False):
         powershell_command = 'Get-ComputerConfiguration'
         output = client.execute(powershell_command)
         unicode_output = "%s" % output
-        try:
-            results = json.loads(unicode_output)
-        except ValueError:
+        load_clean_json = lambda output: json.loads(get_json(output))
+        last_err = None
+        for loader in json.loads, load_clean_json:
             try:
-                clean_output = get_json(unicode_output)
-                results = json.loads(clean_output)
+                return loader(unicode_output)
             except ValueError as err:
-                raise errors.SystemInfoNotJson(err)
-        return results
+                last_err = err
+        raise errors.SystemInfoNotJson(last_err)
     else:
         raise errors.PlatformNotSupported(
             "PoSh-Ohai is a Windows-only sytem info provider. "
